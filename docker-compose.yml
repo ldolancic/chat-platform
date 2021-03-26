@@ -1,0 +1,84 @@
+version: '3.7'
+
+services:
+  mysql:
+    container_name: chat-platform_mysql
+    image: mysql:5.6
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 3
+    restart: on-failure
+    volumes:
+      - mysql_volume:/var/lib/mysql
+    environment:
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - chat-platform-network
+  php:
+    container_name: chat-platform_php
+    build:
+      dockerfile: docker/php/Dockerfile
+      context: ./
+      args:
+        APP_ENV: dev
+    environment:
+      APP_ENV: dev
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASSWORD}
+      DB_HOST: 'chat-platform_mysql'
+      DB_PORT:
+    volumes:
+      - ./docker/php/config/php.development.ini:/usr/local/etc/php/php.ini:ro
+      - ./server/:/var/www/html/:rw
+    working_dir: /var/www/html/
+    depends_on:
+      - mysql
+    networks:
+      - chat-platform-network
+      
+  client:
+    container_name: chat-platform_client
+    build:
+      dockerfile: docker/react/Dockerfile
+      context: ./
+    ports:
+      - 80:3000
+    volumes:
+      - ./client/:/client/:rw
+    networks:
+      - chat-platform-network
+    depends_on:
+      - php
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost", "||", "exit", "1" ]
+      timeout: 20s
+      retries: 10
+
+  nginx:
+    container_name: chat-platform_nginx
+    image: nginx:stable
+    volumes:
+      - ./docker/nginx/config:/etc/nginx/conf.d:ro
+      - ./server/:/var/www/html/:rw
+    ports:
+      - 8080:80
+    depends_on:
+      - php
+    networks:
+      - chat-platform-network
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost/", "||", "exit", "1"]
+      timeout: 20s
+      retries: 10
+volumes:
+  mysql_volume:
+
+networks:
+  chat-platform-network:
+    driver: bridge
