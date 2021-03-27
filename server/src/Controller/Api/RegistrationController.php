@@ -21,15 +21,18 @@ use Symfony\Component\Routing\Annotation\Route;
 class RegistrationController extends AbstractController
 {
     /**
-     * @Route("/", name="index", methods={"POST"})
+     * @Route("/", name="register", methods={"POST"})
      *
      * @param Request $request
      * @param UserRepositoryInterface $userRepository
      * @param UserFactoryInterface $userFactory
      * @return JsonResponse
-     * @throws InvalidEmailException
      */
-    public function index(Request $request, UserRepositoryInterface $userRepository, UserFactoryInterface $userFactory)
+    public function register(
+        Request $request,
+        UserRepositoryInterface $userRepository,
+        UserFactoryInterface $userFactory
+    ): JsonResponse
     {
         $registerUserRequest = new RegisterUserRequest();
 
@@ -42,13 +45,13 @@ class RegistrationController extends AbstractController
         $form->submit($data, true);
 
         if (!$form->isValid()) {
-            throw new HttpException('Validation failed');
+            throw new HttpException(Response::HTTP_BAD_REQUEST);
         }
 
         $user = $userFactory->createFromRegisterUserRequest($registerUserRequest);
 
         $userRepository->save($user);
 
-        return $this->json($user);
+        return $this->json($user, Response::HTTP_CREATED);
     }
 }

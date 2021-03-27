@@ -31,11 +31,11 @@ class UserFactory implements UserFactoryInterface
      */
     public function createFromRegisterUserRequest(RegisterUserRequest $request): User
     {
-        $user = new User();
-
-        $user->setEmail(new Email($request->email));
-        $user->setFirstName($request->firstName);
-        $user->setLastName($request->lastName);
+        $user = new User(
+            new Email($request->email),
+            $request->firstName,
+            $request->lastName
+        );
 
         $user->setPassword(
             $this->passwordEncoder->encodePassword($user, $request->password)

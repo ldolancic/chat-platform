@@ -40,6 +40,19 @@ class User implements UserInterface
      */
     private string $lastName;
 
+    /**
+     * User constructor.
+     * @param Email $email
+     * @param string $firstName
+     * @param string $lastName
+     */
+    public function __construct(Email $email, string $firstName, string $lastName)
+    {
+        $this->setEmail($email);
+        $this->setFirstName($firstName);
+        $this->setLastName($lastName);
+    }
+
     public function getId(): ?int
     {
         return $this->id;
